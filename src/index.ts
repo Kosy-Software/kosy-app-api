@@ -96,7 +96,7 @@ export interface IKosyApp<AppState, AppMessage> {
  * 
  * All messages that come in via Kosy are delegated to functions you need to provide in the constructor.
  */
-export class KosyApp<AppState, AppMessage> {
+export class KosyAppProxy<AppState, AppMessage> {
     private kosyApp: IKosyApp<AppState, AppMessage>;
     private kosyClient: Window = window.parent;
 
