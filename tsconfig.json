@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+      "moduleResolution": "Node",
+      "target": "ES6",
+      "outDir": "dist",
+      "noImplicitAny": true,
+      "removeComments": true,
+      "preserveConstEnums": true,
+      "declaration": true,
+      "allowSyntheticDefaultImports": true,
+      "resolveJsonModule": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

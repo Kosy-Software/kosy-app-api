@@ -1,0 +1,21 @@
+{
+  "name": "kosy-app-api",
+  "version": "0.1.0",
+  "description": "App api for integration with the kosy P2P framework",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kosy-Software/kosy-app-api.git"
+  },
+  "keywords": [
+    "Kosy"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.2.3"
+  }
+}
