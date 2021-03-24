@@ -46,14 +46,13 @@ export class KosyAppProxy<AppState, AppMessage> {
     }
 
     public startApp(): Promise<InitialInfo<AppState>> {
+        //Time out after 10 seconds if the initial info was not received -> send end app to Kosy
+        let timeout = setTimeout(() => {
+            this._sendMessageToKosy({ type: "stop-app", payload: {} });
+        }, 10000);
+
         return new Promise((resolve, reject) => {
             window.addEventListener("message", (event: MessageEvent<KosyToAppMessage<AppState, AppMessage>>) => {
-                //Time out after 10 seconds if the initial info was not received -> send end app to Kosy
-                let timeout = setTimeout(() => {
-                    reject();
-                    this._sendMessageToKosy({ type: "stop-app", payload: {} });
-                }, 10000);
-
                 let message = event.data;
                 switch (message.type) {
                     case "receive-initial-info":
