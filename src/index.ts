@@ -37,7 +37,7 @@ export interface IKosyApp<AppState, AppMessage> {
  * 
  * All messages that come in via Kosy are delegated to functions you need to provide in the constructor.
  */
-export class KosyAppProxy<AppState, AppMessage> {
+export class KosyApi<AppState, AppMessage> {
     private kosyApp: IKosyApp<AppState, AppMessage>;
     private kosyClient: Window = window.parent;
 
@@ -46,17 +46,11 @@ export class KosyAppProxy<AppState, AppMessage> {
     }
 
     public startApp(): Promise<InitialInfo<AppState>> {
-        //Time out after 10 seconds if the initial info was not received -> send end app to Kosy
-        let timeout = setTimeout(() => {
-            this._sendMessageToKosy({ type: "stop-app", payload: {} });
-        }, 10000);
-
         return new Promise((resolve, reject) => {
             window.addEventListener("message", (event: MessageEvent<KosyToAppMessage<AppState, AppMessage>>) => {
                 let message = event.data;
                 switch (message.type) {
                     case "receive-initial-info":
-                        clearTimeout(timeout);
                         resolve (message.payload);
                         break;
                     case "client-has-joined":
