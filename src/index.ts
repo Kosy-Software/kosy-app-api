@@ -4,7 +4,7 @@ type AppToKosyMessage<AppState, AppMessage> =
     | ReadyAndListening
     | RelayMessage<AppMessage>
     | ReceiveAppState<AppState>
-    | EndApp
+    | StopApp
     
 interface ReadyAndListening {
     type: "ready-and-listening";
@@ -21,8 +21,8 @@ interface RelayMessage<AppMessage> {
     payload: AppMessage;
 }
 
-interface EndApp {
-    type: "end-app";
+interface StopApp {
+    type: "stop-app";
     payload: any; //not known yet -> should probably contain an integration identifier
 }
 
@@ -104,13 +104,13 @@ export class KosyAppProxy<AppState, AppMessage> {
         this.kosyApp = kosyApp;
     }
 
-    public start(): Promise<InitialInfo<AppState>> {
+    public startApp(): Promise<InitialInfo<AppState>> {
         return new Promise((resolve, reject) => {
             window.addEventListener("message", (event: MessageEvent<KosyToAppMessage<AppState, AppMessage>>) => {
                 //Time out after 10 seconds if the initial info was not received -> send end app to Kosy
                 let timeout = setTimeout(() => {
                     reject();
-                    this._sendMessageToKosy({ type: "end-app", payload: {} });
+                    this._sendMessageToKosy({ type: "stop-app", payload: {} });
                 }, 10000);
 
                 let message = event.data;
@@ -138,6 +138,13 @@ export class KosyAppProxy<AppState, AppMessage> {
             });
             this._sendMessageToKosy({ type: "ready-and-listening", payload: {} });
         });
+    }
+
+    /**
+     * This kills the app -> no further processing will be available
+     */
+    public stopApp() {
+        this._sendMessageToKosy({ type: "stop-app", payload: {} });
     }
 
     /**
