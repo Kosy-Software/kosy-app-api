@@ -1,11 +1,11 @@
-export interface InitialInfo<IntegrationState> {
+export interface InitialInfo<AppState> {
     /// Information about all clients present
     clients: { [clientUuid: string]: ClientInfo };
     /// The current client's identifier
     currentClientUuid: string;
     /// The initializing client's identifier
     initializerClientUuid: string;
-    currentIntegrationState?: IntegrationState
+    currentAppState?: AppState
 }
 
 export interface ClientInfo {

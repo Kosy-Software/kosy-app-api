@@ -8,7 +8,7 @@ export type AppToKosyMessage<AppState, AppMessage> =
     
 export interface ReadyAndListening {
     type: "ready-and-listening";
-    payload: any; //not known yet -> should probably contain an integration identifier
+    payload: any; //not known yet -> should probably contain an app identifier
 }
 
 export interface ReceiveAppState<AppState> {
@@ -23,7 +23,7 @@ export interface RelayMessage<AppMessage> {
 
 export interface StopApp {
     type: "stop-app";
-    payload: any; //not known yet -> should probably contain an integration identifier
+    payload: any; //not known yet -> should probably contain an app identifier
 }
 
 export type KosyToAppMessage<AppState, AppMessage> =    
