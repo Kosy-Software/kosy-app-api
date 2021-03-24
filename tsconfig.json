@@ -2,7 +2,7 @@
   "compilerOptions": {
       "moduleResolution": "Node",
       "target": "ES6",
-      "outDir": "dist",
+      "outDir": ".",
       "noImplicitAny": true,
       "removeComments": true,
       "preserveConstEnums": true,

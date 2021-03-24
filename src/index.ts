@@ -1,4 +1,4 @@
-import { InitialInfo, ClientInfo } from './lib/types';
+import { InitialInfo, ClientInfo } from './types';
 
 type AppToKosyMessage<AppState, AppMessage> =
     | ReadyAndListening
