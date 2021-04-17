@@ -13,16 +13,22 @@ export interface IKosyApp<AppState, AppMessage> {
     onRequestState(): AppState;
 
     /**
+     * When it is determined that your state is out of date locally, a new state will be fetched for you & set directly
+     * @param state The full new state
+     */
+    onProvideState(state: AppState): void;
+
+    /**
      * Will be called when a new Kosy client joins
-     * @param clientInfo The information about the new client
+     * @param clientInfo The information of the new client
      */
     onClientHasJoined(clientInfo: ClientInfo): void;
 
     /**
      * Will be called whenever a Kosy client leaves
-     * @param clientInfo The information about the leaving client
+     * @param clientUuid The uuid of the leaving client
      */
-    onClientHasLeft(clientInfo: ClientInfo): void;
+    onClientHasLeft(clientUuid: string): void;
 
     /**
      * Receives a message from Kosy, most likely from another app client.
@@ -57,11 +63,14 @@ export class KosyApi<AppState, AppMessage> {
                         this.kosyApp.onClientHasJoined(message.payload);
                         break;
                     case "client-has-left":
-                        this.kosyApp.onClientHasLeft(message.payload);
+                        this.kosyApp.onClientHasLeft(message.clientUuid);
                         break;
-                    case "request-app-state":
+                    case "get-app-state":
                         const state = this.kosyApp.onRequestState();
-                        this._sendMessageToKosy({ type: "receive-app-state", payload: state });
+                        this._sendMessageToKosy({ type: "receive-app-state", payload: state, clientUuids: message.clientUuids });
+                        break;
+                    case "set-app-state":
+                        this.kosyApp.onProvideState(message.state);
                         break;
                     case "receive-message":
                         this.kosyApp.onReceiveMessage(message.payload);
@@ -70,7 +79,7 @@ export class KosyApi<AppState, AppMessage> {
                         break;
                 }
             });
-            this._sendMessageToKosy({ type: "ready-and-listening", payload: {} });
+            this._sendMessageToKosy({ type: "ready-and-listening" });
         });
     }
 
@@ -78,7 +87,7 @@ export class KosyApi<AppState, AppMessage> {
      * This kills the app -> no further processing will be available
      */
     public stopApp() {
-        this._sendMessageToKosy({ type: "stop-app", payload: {} });
+        this._sendMessageToKosy({ type: "stop-app" });
     }
 
     /**

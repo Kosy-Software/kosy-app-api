@@ -5,15 +5,16 @@ export type AppToKosyMessage<AppState, AppMessage> =
     | RelayMessage<AppMessage>
     | ReceiveAppState<AppState>
     | StopApp
+    | RefreshAppState
     
 export interface ReadyAndListening {
     type: "ready-and-listening";
-    payload: any; //not known yet -> should probably contain an app identifier
 }
 
 export interface ReceiveAppState<AppState> {
     type: "receive-app-state";
-    payload: AppState
+    clientUuids: string[];
+    payload: AppState;
 }
 
 export interface RelayMessage<AppMessage> {
@@ -23,12 +24,16 @@ export interface RelayMessage<AppMessage> {
 
 export interface StopApp {
     type: "stop-app";
-    payload: any; //not known yet -> should probably contain an app identifier
+}
+
+export interface RefreshAppState {
+    type: "refresh-app-state";
 }
 
 export type KosyToAppMessage<AppState, AppMessage> =    
     | ReceiveInitialInfo<AppState>
-    | RequestAppState
+    | GetAppState
+    | SetAppState<AppState>
     | ClientHasJoined
     | ClientHasLeft
     | ReceiveMessage<AppMessage>
@@ -39,9 +44,14 @@ export interface ReceiveInitialInfo<AppState> {
     payload: InitialInfo<AppState>
 }
 
-export interface RequestAppState {
-    type: "request-app-state";
-    payload: {}
+export interface GetAppState {
+    type: "get-app-state";
+    clientUuids: string[];
+}
+
+export interface SetAppState<AppState> {
+    type: "set-app-state";
+    state: AppState;
 }
 
 /// Note: this message is also used when the client info has changed (e.g. seat number or name)
@@ -52,7 +62,7 @@ export interface ClientHasJoined {
 
 export interface ClientHasLeft {
     type: "client-has-left";
-    payload: ClientInfo;
+    clientUuid: string;
 }
 
 export interface ReceiveMessage<AppMessage> {
