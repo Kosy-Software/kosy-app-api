@@ -1,8 +1,9 @@
 import { InitialInfo, ClientInfo } from '../types';
 
-export type AppToKosyMessage<AppState, AppMessage> =
+export type AppToKosyMessage<AppState, ClientToHostMessage, HostToClientMessage> =
     | ReadyAndListening
-    | RelayMessage<AppMessage>
+    | RelayMessageToHost<ClientToHostMessage>
+    | RelayMessageToClients<HostToClientMessage>
     | ReceiveAppState<AppState>
     | StopApp
     | RefreshAppState
@@ -14,12 +15,20 @@ export interface ReadyAndListening {
 export interface ReceiveAppState<AppState> {
     type: "receive-app-state";
     clientUuids: string[];
-    payload: AppState;
+    state: AppState;
+    latestMessageNumber: number;
 }
 
-export interface RelayMessage<AppMessage> {
-    type: "relay-message";
-    payload: AppMessage;
+export interface RelayMessageToHost<ClientToHostMessage> {
+    type: "relay-message-to-host";
+    message: ClientToHostMessage;
+}
+
+export interface RelayMessageToClients<HostToClientMessage> {
+    type: "relay-message-to-clients";
+    message: HostToClientMessage;
+    messageNumber: number;
+    sentByClientUuid: string;
 }
 
 export interface StopApp {
@@ -30,13 +39,14 @@ export interface RefreshAppState {
     type: "refresh-app-state";
 }
 
-export type KosyToAppMessage<AppState, AppMessage> =    
+export type KosyToAppMessage<AppState, ClientToHostMessage, HostToClientMessage> =    
     | ReceiveInitialInfo<AppState>
     | GetAppState
     | SetAppState<AppState>
     | ClientHasJoined
     | ClientHasLeft
-    | ReceiveMessage<AppMessage>
+    | ReceiveMessageAsHost<ClientToHostMessage>
+    | ReceiveMessageAsClient<HostToClientMessage>
 
 /// Note: this message is also used when the client info has changed (e.g. seat number or name)
 export interface ReceiveInitialInfo<AppState> {
@@ -52,12 +62,13 @@ export interface GetAppState {
 export interface SetAppState<AppState> {
     type: "set-app-state";
     state: AppState;
+    latestMessageNumber: number;
 }
 
 /// Note: this message is also used when the client info has changed (e.g. seat number or name)
 export interface ClientHasJoined {
     type: "client-has-joined";
-    payload: ClientInfo;
+    clientInfo: ClientInfo;
 }
 
 export interface ClientHasLeft {
@@ -65,7 +76,14 @@ export interface ClientHasLeft {
     clientUuid: string;
 }
 
-export interface ReceiveMessage<AppMessage> {
-    type: "receive-message";
-    payload: AppMessage;
+export interface ReceiveMessageAsHost<ClientToHostMessage> {
+    type: "receive-message-as-host";
+    message: ClientToHostMessage;
+}
+
+export interface ReceiveMessageAsClient<HostToClientMessage> {
+    type: "receive-message-as-client";
+    message: HostToClientMessage;
+    messageNumber: number;
+    sentByClientUuid: string;
 }
