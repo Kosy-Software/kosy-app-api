@@ -127,15 +127,15 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
     }
 
     //Try handling the message recursively every 0.1 second for a couple of seconds
-    private _handleReceiveMessageAsClientRecursive(eventData: ReceiveMessageAsClient<HostToClientMessage>, attemptNumber: number) {
+    private _handleReceiveMessageAsClientRecursive(eventData: ReceiveMessageAsClient<HostToClientMessage>, initData: InitialInfo<AppState>, attemptNumber: number) {
         //If you can handle the message, handle it \o/
-        if (this.latestMessageNumber === eventData.messageNumber - 1) {
+        if (this.latestMessageNumber === eventData.messageNumber - (initData.currentClientUuid === eventData.sentByClientUuid ? 0 : 1)) {
             this.kosyApp.onReceiveMessageAsClient(eventData.message);
             this.latestMessageNumber = eventData.messageNumber;
         } else {
             //If at first you don't succeed, try try and try again
             if (attemptNumber < 50 && this.latestMessageNumber < eventData.messageNumber) {
-                setTimeout(() => this._handleReceiveMessageAsClientRecursive(eventData, attemptNumber + 1), 100);
+                setTimeout(() => this._handleReceiveMessageAsClientRecursive(eventData, initData, attemptNumber + 1), 100);
             }
             //Whelp, you're fucked, wait for Kosy to help you fix this mess :)
         }
@@ -144,11 +144,7 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
     private _handleReceiveMessageAsClient(eventData: ReceiveMessageAsClient<HostToClientMessage>) {
         this.initialInfoPromise
             .then((initData) => {
-                if (initData.currentClientUuid === eventData.sentByClientUuid) {
-                    this.kosyApp.onReceiveMessageAsClient(eventData.message);
-                    return;
-                }
-                this._handleReceiveMessageAsClientRecursive(eventData, 0);
+                this._handleReceiveMessageAsClientRecursive(eventData, initData, 0);
             });
     }
 
