@@ -52,6 +52,7 @@ export type KosyToAppMessage<AppState, ClientToHostMessage, HostToClientMessage>
 export interface ReceiveInitialInfo<AppState> {
     type: "receive-initial-info";
     payload: InitialInfo<AppState>
+    latestMessageNumber: number;
 }
 
 export interface GetAppState {

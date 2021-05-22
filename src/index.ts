@@ -72,6 +72,7 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
                 switch (eventData.type) {
                     case "receive-initial-info":
                         resolve (eventData.payload);
+                        this.latestMessageNumber = eventData.latestMessageNumber;
                         break;
                     case "client-has-joined":
                         this.kosyApp.onClientHasJoined(eventData.clientInfo);
@@ -127,7 +128,7 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
     }
 
     //Try handling the message recursively every 0.1 second for a couple of seconds
-    private _handleReceiveMessageAsClientRecursive(eventData: ReceiveMessageAsClient<HostToClientMessage>, initData: InitialInfo<AppState>, attemptNumber: number) {
+    private _handleReceiveMessageAsClientRecursive(eventData: ReceiveMessageAsClient<HostToClientMessage>, initData: InitialInfo<AppState>, attemptNumber: number) {        
         //If you can handle the message, handle it \o/
         if (this.latestMessageNumber === eventData.messageNumber - (initData.currentClientUuid === eventData.sentByClientUuid ? 0 : 1)) {
             this.kosyApp.onReceiveMessageAsClient(eventData.message);
