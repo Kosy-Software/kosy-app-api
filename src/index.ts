@@ -71,27 +71,44 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
                 let eventData = event.data;
                 switch (eventData.type) {
                     case "receive-initial-info":
-                        resolve (eventData.payload);
                         this.latestMessageNumber = eventData.latestMessageNumber;
+                        this.log("Resolving initial info promise with: ", eventData.payload);
+                        resolve (eventData.payload);
                         break;
                     case "client-has-joined":
-                        this.kosyApp.onClientHasJoined(eventData.clientInfo);
-                        break;
-                    case "client-has-left":
-                        this.kosyApp.onClientHasLeft(eventData.clientUuid);
-                        break;
-                    case "get-app-state":
-                        const state = this.kosyApp.onRequestState();
-                        this._sendMessageToKosy({
-                            type: "receive-app-state",
-                            state: state,
-                            clientUuids: eventData.clientUuids,
-                            latestMessageNumber: this.latestMessageNumber 
+                        let clientInfo = eventData.clientInfo;
+                        this.initialInfoPromise.then(() => {
+                            this.log("On client has joined: ", clientInfo);
+                            this.kosyApp.onClientHasJoined(clientInfo)
                         });
                         break;
+                    case "client-has-left":
+                        let clientUuid = eventData.clientUuid;
+                        this.initialInfoPromise.then(() => {
+                            this.log("On client has left: ", clientUuid);
+                            this.kosyApp.onClientHasLeft(clientUuid);
+                        });
+                        break;
+                    case "get-app-state":
+                        let clientUuids = eventData.clientUuids;
+                        this.initialInfoPromise.then(() => {
+                            this.log("Get app state received -> sending app state");
+                            const state = this.kosyApp.onRequestState();
+                            this._sendMessageToKosy({
+                                type: "receive-app-state",
+                                state: state,
+                                clientUuids: clientUuids,
+                                latestMessageNumber: this.latestMessageNumber 
+                            });    
+                        })
+                        break;
                     case "set-app-state":
-                        this.kosyApp.onProvideState(eventData.state);
                         this.latestMessageNumber = eventData.latestMessageNumber;
+                        let state = eventData.state;
+                        this.initialInfoPromise.then(() => {
+                            this.log("Received app state from Kosy -> setting app state");
+                            this.kosyApp.onProvideState(state);
+                        });
                         break;
                     case "receive-message-as-host":
                         this._handleReceiveMessageAsHost(eventData);
@@ -120,6 +137,7 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
      * @param message the message to relay to the Kosy Host
      */
     public relayMessage(message: ClientToHostMessage) {
+        this.log("Relaying client message to host: ", message);
         this._sendMessageToKosy({ type: "relay-message-to-host", message: message });
     }
 
@@ -138,6 +156,8 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
             if (attemptNumber < 50 && this.latestMessageNumber < eventData.messageNumber) {
                 setTimeout(() => this._handleReceiveMessageAsClientRecursive(eventData, initData, attemptNumber + 1), 100);
             }
+            this.log("Timeout on processing message as client: ", eventData.message);
+            this.log("Wait for Kosy to fix this mess...");
             //Whelp, you're fucked, wait for Kosy to help you fix this mess :)
         }
     }
@@ -145,6 +165,7 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
     private _handleReceiveMessageAsClient(eventData: ReceiveMessageAsClient<HostToClientMessage>) {
         this.initialInfoPromise
             .then((initData) => {
+                this.log("Received message as client, processing: ", eventData.message);
                 this._handleReceiveMessageAsClientRecursive(eventData, initData, 0);
             });
     }
@@ -152,11 +173,19 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
     private _handleReceiveMessageAsHost(eventData: ReceiveMessageAsHost<ClientToHostMessage>) {
         this.initialInfoPromise
             .then((initData) => {
+                this.log("Trying to handle message as host");
                 //Handle receiving the message as host
                 const message = this.kosyApp.onReceiveMessageAsHost(eventData.message);
                 if (message) {
+                    this.log("Host message was converted into client message -> notifying kosy with a relay to clients message", message);
                     this._sendMessageToKosy({ type: "relay-message-to-clients", sentByClientUuid: initData.currentClientUuid, message: message, messageNumber: ++this.latestMessageNumber });
                 }
             });
+    }
+
+    private log(...args: any[]) {
+        if(localStorage.getItem("debug-mode") === "1") {
+            console.log("From kosy-app-api: ", ...args);
+        }
     }
 }
