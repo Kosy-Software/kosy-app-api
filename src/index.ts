@@ -122,17 +122,18 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
                             let addedClients = this.dictionaryToArray(newClientInfo).filter(each => !this.clients[each[0]]);
                             let removedClients = this.dictionaryToArray(this.clients).filter(each => !newClientInfo[each[0]]);
                             
+                            let latestMessageNumber = this.latestMessageNumber;
                             if (newHostClientUuid !== this.hostClientUuid && typeof this.kosyApp.onHostHasChanged === "function") {
                                 this.log("On host has changed was defined -> notifying everyone the host has changed", eventData);
-                                this._relayMessageToClients(initData, { type: "_host-has-changed", clientUuid: newHostClientUuid });
+                                this._relayMessageToClients(initData, { type: "_host-has-changed", clientUuid: newHostClientUuid }, ++latestMessageNumber);
                             }
                             if (addedClients.length > 0 && typeof this.kosyApp.onClientHasJoined === "function") {
                                 this.log("On client has joined was defined", eventData);
-                                addedClients.forEach(added => this._relayMessageToClients(initData, { type: "_client-has-joined", clientInfo: added[1] }));
+                                addedClients.forEach(added => this._relayMessageToClients(initData, { type: "_client-has-joined", clientInfo: added[1] }, ++latestMessageNumber));
                             }
                             if (removedClients.length > 0 && typeof this.kosyApp.onClientHasLeft === "function") {
                                 this.log("On client has left was defined", eventData);
-                                removedClients.forEach(removed => this._relayMessageToClients(initData, { type: "_client-has-left", clientUuid: removed[0] }));
+                                removedClients.forEach(removed => this._relayMessageToClients(initData, { type: "_client-has-left", clientUuid: removed[0] }, ++latestMessageNumber));
                             }
 
                             this.clients = newClientInfo;
@@ -191,13 +192,13 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
         this._sendMessageToKosy({ type: "relay-message-to-host", message: message });
     }
 
-    private _relayMessageToClients(initialData: InitialInfo<AppState>, message: HostToClientMessage | PrivateHostToClientMessage) {
+    private _relayMessageToClients(initialData: InitialInfo<AppState>, message: HostToClientMessage | PrivateHostToClientMessage, messageNumber: number) {
         this.log("Relaying host to client message: ", message);
         this._sendMessageToKosy({ 
             type: "relay-message-to-clients",
             sentByClientUuid: initialData.currentClientUuid, 
             message: <any>message,
-            messageNumber: ++this.latestMessageNumber 
+            messageNumber: messageNumber
         })
     }
 
@@ -208,7 +209,7 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
     //Try handling the message recursively every 0.1 second for a couple of seconds
     private _handleReceiveMessageAsClientRecursive(eventData: ReceiveMessageAsClient<HostToClientMessage | PrivateHostToClientMessage>, initData: InitialInfo<AppState>, attemptNumber: number) {        
         //If you can handle the message, handle it \o/
-        if (this.latestMessageNumber === eventData.messageNumber - (initData.currentClientUuid === eventData.sentByClientUuid ? 0 : 1)) {
+        if (this.latestMessageNumber === eventData.messageNumber - 1) {
             switch (eventData.message.type) {
                 case "_host-has-changed": {                    
                     this.kosyApp.onHostHasChanged?.((<PrivateHostHasChanged>eventData.message).clientUuid);
@@ -255,7 +256,7 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
                 //Handle receiving the message as host
                 const message = this.kosyApp.onReceiveMessageAsHost(eventData.message);
                 if (message) {
-                    this._relayMessageToClients(initData, message);
+                    this._relayMessageToClients(initData, message, this.latestMessageNumber + 1);
                 }
             });
     }
