@@ -43,6 +43,7 @@ export type KosyToAppMessage<AppState, ClientToHostMessage, HostToClientMessage>
     | ReceiveInitialInfo<AppState>
     | GetAppState
     | SetAppState<AppState>
+    | SetHost
     | ClientHasJoined
     | ClientHasLeft
     | ReceiveMessageAsHost<ClientToHostMessage>
@@ -74,6 +75,11 @@ export interface ClientHasJoined {
 
 export interface ClientHasLeft {
     type: "client-has-left";
+    clientUuid: string;
+}
+
+export interface SetHost {
+    type: "set-host";
     clientUuid: string;
 }
 

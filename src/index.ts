@@ -36,6 +36,12 @@ export interface IKosyApp<AppState, ClientToHostMessage, HostToClientMessage> {
     onClientHasLeft(clientUuid: string): void;
 
     /**
+     * Will be called whenever the Kosy host changes (can potentially be used to set the app's Host when the initializer leaves)
+     * @param clientUuid The uuid of the new kosy host
+     */
+    onHostHasChanged(clientUuid: string): void;
+
+    /**
      * Receive a message that was sent from a client to the host, optionally, reply with a message that must be sent to all clients at the table to update the state
      * @param message The message that was sent through the Kosy network to the current app
      */
@@ -82,13 +88,21 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage> {
                             this.kosyApp.onClientHasJoined(clientInfo)
                         });
                         break;
-                    case "client-has-left":
+                    case "client-has-left": {
                         let clientUuid = eventData.clientUuid;
                         this.initialInfoPromise.then(() => {
                             this.log("On client has left: ", clientUuid);
                             this.kosyApp.onClientHasLeft(clientUuid);
                         });
+                        break;                    
+                    }
+                    case "set-host": {
+                        let clientUuid = eventData.clientUuid;
+                        this.initialInfoPromise.then(() => {
+                            this.kosyApp.onHostHasChanged(clientUuid);
+                        });
                         break;
+                    }
                     case "get-app-state":
                         let clientUuids = eventData.clientUuids;
                         this.initialInfoPromise.then(() => {
