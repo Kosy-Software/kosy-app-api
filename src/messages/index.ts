@@ -43,9 +43,7 @@ export type KosyToAppMessage<AppState, ClientToHostMessage, HostToClientMessage>
     | ReceiveInitialInfo<AppState>
     | GetAppState
     | SetAppState<AppState>
-    | SetHost
-    | ClientHasJoined
-    | ClientHasLeft
+    | SetClientInfo
     | ReceiveMessageAsHost<ClientToHostMessage>
     | ReceiveMessageAsClient<HostToClientMessage>
 
@@ -67,20 +65,10 @@ export interface SetAppState<AppState> {
     latestMessageNumber: number;
 }
 
-/// Note: this message is also used when the client info has changed (e.g. seat number or name)
-export interface ClientHasJoined {
-    type: "client-has-joined";
-    clientInfo: ClientInfo;
-}
-
-export interface ClientHasLeft {
-    type: "client-has-left";
-    clientUuid: string;
-}
-
-export interface SetHost {
-    type: "set-host";
-    clientUuid: string;
+export interface SetClientInfo {
+    type: "set-client-info";
+    clients: { [clientUuid: string]: ClientInfo };
+    hostClientUuid: string;
 }
 
 export interface ReceiveMessageAsHost<ClientToHostMessage> {

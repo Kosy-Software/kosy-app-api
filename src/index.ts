@@ -84,11 +84,22 @@ type PrivateHostToClientMessage =
 export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends Exclude<PrivateHostToClientMessage, { type: string }>> {
     private kosyApp: IKosyApp<AppState, ClientToHostMessage, HostToClientMessage>;
     private kosyClient: Window = window.parent;
+    private clients: { [clientUuid: string]: ClientInfo };
+    private hostClientUuid: string;
     private initialInfoPromise: Promise<InitialInfo<AppState>>;
     private latestMessageNumber = 0;
 
     constructor(kosyApp: IKosyApp<AppState, ClientToHostMessage, HostToClientMessage>) {
         this.kosyApp = kosyApp;
+    }
+
+    private dictionaryToArray<T> (dictionary: { [key: string]: T }): Array<[string, T]> {
+        let array: Array<[string, T]> = [];
+        for (const key in dictionary) {
+            if (!dictionary.hasOwnProperty(key)) continue;
+            array.push([key, dictionary[key]]);
+        }
+        return array;
     }
 
     public startApp(): Promise<InitialInfo<AppState>> {
@@ -98,35 +109,34 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
                 switch (eventData.type) {
                     case "receive-initial-info":
                         this.latestMessageNumber = eventData.latestMessageNumber;
+                        this.clients = eventData.payload.clients;
+                        this.hostClientUuid = eventData.payload.initializerClientUuid;
                         this.log("Resolving initial info promise with: ", eventData.payload);
                         resolve (eventData.payload);
                         break;
-                    case "client-has-joined":
-                        let clientInfo = eventData.clientInfo;
+                    case "set-client-info": {
+                        let newClientInfo = eventData.clients;
+                        let newHostClientUuid = eventData.hostClientUuid;
+
                         this.initialInfoPromise.then((initData) => {
-                            if (typeof this.kosyApp.onClientHasJoined === "function") {
-                                this.log("On client has joined was defined -> notifying everyone a client has joined", eventData);
-                                this._relayMessageToClients(initData, { type: "_client-has-joined", clientInfo: clientInfo });
+                            let addedClients = this.dictionaryToArray(newClientInfo).filter(each => !this.clients[each[0]]);
+                            let removedClients = this.dictionaryToArray(this.clients).filter(each => !newClientInfo[each[0]]);
+
+                            if (addedClients.length > 0 && typeof this.kosyApp.onClientHasJoined === "function") {
+                                this.log("On client has joined was defined", eventData);
+                                addedClients.forEach(added => this._relayMessageToClients(initData, { type: "_client-has-joined", clientInfo: added[1] }));
                             }
-                        });
-                        break;
-                    case "client-has-left": {
-                        let clientUuid = eventData.clientUuid;
-                        this.initialInfoPromise.then((initData) => {
                             if (typeof this.kosyApp.onClientHasLeft === "function") {
-                                this.log("On client has left was defined -> notifying everyone a client has left", eventData);
-                                this._relayMessageToClients(initData, { type: "_client-has-left", clientUuid: clientUuid });
+                                this.log("On client has left was defined", eventData);
+                                removedClients.forEach(removed => this._relayMessageToClients(initData, { type: "_client-has-left", clientUuid: removed[0] }));
                             }
-                        });
-                        break;                    
-                    }
-                    case "set-host": {
-                        let clientUuid = eventData.clientUuid;
-                        this.initialInfoPromise.then((initData) => {
-                            if (typeof this.kosyApp.onHostHasChanged === "function") {
+                            if (newHostClientUuid !== this.hostClientUuid && typeof this.kosyApp.onHostHasChanged === "function") {
                                 this.log("On host has changed was defined -> notifying everyone the host has changed", eventData);
-                                this._relayMessageToClients(initData, { type: "_host-has-changed", clientUuid: clientUuid });
+                                this._relayMessageToClients(initData, { type: "_host-has-changed", clientUuid: newHostClientUuid });
                             }
+
+                            this.clients = newClientInfo;
+                            this.hostClientUuid = newHostClientUuid;
                         });
                         break;
                     }
