@@ -140,19 +140,18 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
                         });
                         break;
                     }
-                    case "get-app-state":
+                    case "get-app-state": {
                         let clientUuids = eventData.clientUuids;
-                        this.initialInfoPromise.then(() => {
-                            this.log("Get app state received -> sending app state");
-                            const state = this.kosyApp.onRequestState();
-                            this._sendMessageToKosy({
-                                type: "receive-app-state",
-                                state: state,
-                                clientUuids: clientUuids,
-                                latestMessageNumber: this.latestMessageNumber 
-                            });    
-                        })
+                        this.log("Get app state received -> sending app state");
+                        const state = this.kosyApp.onRequestState();
+                        this._sendMessageToKosy({
+                            type: "receive-app-state",
+                            state: state,
+                            clientUuids: clientUuids,
+                            latestMessageNumber: this.latestMessageNumber 
+                        });
                         break;
+                    }
                     case "set-app-state":
                         this.latestMessageNumber = eventData.latestMessageNumber;
                         let state = eventData.state;
