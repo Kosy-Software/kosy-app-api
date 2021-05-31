@@ -232,10 +232,11 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
             //If at first you don't succeed, try try and try again
             if (attemptNumber < 50 && this.latestMessageNumber < eventData.messageNumber) {
                 setTimeout(() => this._handleReceiveMessageAsClientRecursive(eventData, initData, attemptNumber + 1), 100);
+            } else {
+                this.log("Timeout on processing message as client: ", eventData.message);
+                this.log("Wait for Kosy to fix this mess...");            
+                //Whelp, you're fucked, wait for Kosy to help you fix this mess :)
             }
-            this.log("Timeout on processing message as client: ", eventData.message);
-            this.log("Wait for Kosy to fix this mess...");
-            //Whelp, you're fucked, wait for Kosy to help you fix this mess :)
         }
     }
 
