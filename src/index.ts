@@ -123,19 +123,11 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
                             let removedClients = this.dictionaryToArray(this.clients).filter(each => !newClientInfo[each[0]]);
                             
                             let latestMessageNumber = this.latestMessageNumber;
-                            if (newHostClientUuid !== this.hostClientUuid && typeof this.kosyApp.onHostHasChanged === "function") {
-                                this.log("On host has changed was defined -> notifying everyone the host has changed", eventData);
+                            if (this.hostClientUuid !== newHostClientUuid) {
                                 this._relayMessageToClients(initData, { type: "_host-has-changed", clientUuid: newHostClientUuid }, ++latestMessageNumber);
                             }
-                            if (addedClients.length > 0 && typeof this.kosyApp.onClientHasJoined === "function") {
-                                this.log("On client has joined was defined", eventData);
-                                addedClients.forEach(added => this._relayMessageToClients(initData, { type: "_client-has-joined", clientInfo: added[1] }, ++latestMessageNumber));
-                            }
-                            if (removedClients.length > 0 && typeof this.kosyApp.onClientHasLeft === "function") {
-                                this.log("On client has left was defined", eventData);
-                                removedClients.forEach(removed => this._relayMessageToClients(initData, { type: "_client-has-left", clientUuid: removed[0] }, ++latestMessageNumber));
-                            }
-
+                            addedClients.forEach(added => this._relayMessageToClients(initData, { type: "_client-has-joined", clientInfo: added[1] }, ++latestMessageNumber));
+                            removedClients.forEach(removed => this._relayMessageToClients(initData, { type: "_client-has-left", clientUuid: removed[0] }, ++latestMessageNumber));
                             this.clients = newClientInfo;
                             this.hostClientUuid = newHostClientUuid;
                         });
@@ -211,16 +203,22 @@ export class KosyApi<AppState, ClientToHostMessage, HostToClientMessage extends 
         //If you can handle the message, handle it \o/
         if (this.latestMessageNumber === eventData.messageNumber - 1) {
             switch (eventData.message.type) {
-                case "_host-has-changed": {                    
-                    this.kosyApp.onHostHasChanged?.((<PrivateHostHasChanged>eventData.message).clientUuid);
+                case "_host-has-changed": {  
+                    let hostClientUuid = (<PrivateHostHasChanged>eventData.message).clientUuid;
+                    this.hostClientUuid = hostClientUuid                
+                    this.kosyApp.onHostHasChanged?.(hostClientUuid);
                     break;
                 }
                 case "_client-has-joined": {
-                    this.kosyApp.onClientHasJoined?.((<PrivateClientHasJoined>eventData.message).clientInfo);
+                    let newClient = (<PrivateClientHasJoined>eventData.message).clientInfo;
+                    this.clients[newClient.clientUuid] = newClient;
+                    this.kosyApp.onClientHasJoined?.(newClient);
                     break;
                 }
                 case "_client-has-left": {
-                    this.kosyApp.onClientHasLeft?.((<PrivateClientHasLeft>eventData.message).clientUuid);
+                    let clientUuid = (<PrivateClientHasLeft>eventData.message).clientUuid;
+                    this.clients[clientUuid] = null;
+                    this.kosyApp.onClientHasLeft?.(clientUuid);
                     break;
                 }
                 default: {
