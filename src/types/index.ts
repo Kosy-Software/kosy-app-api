@@ -15,4 +15,6 @@ export interface InitialInfo<AppState> {
 export interface ClientInfo {
     clientUuid: string;
     clientName: string;
+    /// The seat number of the current client (can be undefined)
+    seatNumber?: number;
 }
